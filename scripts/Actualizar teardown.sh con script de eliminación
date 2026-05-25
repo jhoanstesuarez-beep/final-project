@@ -1,0 +1,3 @@
+#!/bin/bash
+docker stack rm final-project
+echo "✅ Stack eliminado"
