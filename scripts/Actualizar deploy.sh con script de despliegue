@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+docker stack deploy -c docker-stack.yml final-project
+echo "✅ Despliegue completo. Servicios:"
+docker stack services final-project
