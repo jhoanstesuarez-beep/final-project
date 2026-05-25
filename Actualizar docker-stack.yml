@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - analytics_net
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  producer_api:
+    build: ./services/producer_api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5001:5000"
+    networks:
+      - analytics_net
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+    depends_on:
+      - postgres
+
+  spark_processor:
+    build: ./services/spark_processor
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - analytics_net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    depends_on:
+      - postgres
+
+  dashboard:
+    build: ./services/dashboard
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5002:5000"
+    networks:
+      - analytics_net
+    deploy:
+      replicas: 1
+    depends_on:
+      - postgres
+
+networks:
+  analytics_net:
+    driver: overlay
+
+volumes:
+  postgres_data:
