@@ -1,0 +1,24 @@
+ # Final Project: Log Analytics with PySpark on Docker Swarm
+
+## Requisitos
+- Docker Engine (con modo Swarm activado: `docker swarm init`)
+- Git
+
+## Despliegue
+1. Clonar repositorio
+2. Copiar `.env.example` a `.env` y ajustar credenciales
+3. Ejecutar `chmod +x scripts/*.sh` y luego `./scripts/deploy.sh`
+4. Verificar servicios: `docker stack ps final-project`
+5. Probar API: `curl -X POST http://localhost:5001/event -H "Content-Type: application/json" -d '{"page":"home","user_id":"u1"}'`
+6. Dashboard: `http://localhost:5002/stats`
+
+## Componente PySpark
+- El servicio `spark_processor` ejecuta un script PySpark cada 5 minutos.
+- Lee datos de `raw_events` (PostgreSQL), agrupa por página, calcula total de visitas y usuarios únicos, y escribe en `page_stats`.
+
+## Arquitectura distribuida
+- Swarm orquesta 4 servicios en una red overlay.
+- `producer_api` escala a 2 réplicas.
+
+## Parada
+`./scripts/teardown.sh`
